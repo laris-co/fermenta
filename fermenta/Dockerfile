@@ -1,25 +1,25 @@
-# Supervisor warns that build.yaml is deprecated and wants build params in the
-# Dockerfile. Defaulting BUILD_FROM here means this builds with or without it.
+# Supervisor warns build.yaml is deprecated and wants build params inline, so
+# BUILD_FROM is defaulted here as well as mapped per-arch in build.yaml.
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21
-
-# Supervisor builds an add-on with the ADD-ON DIRECTORY as the build context, not
-# the repository root — so this cannot COPY ../src. It fetches a pinned commit of
-# this same repo instead, which also makes every build reproducible and pins the
-# exact source that produced the image.
-FROM node:22-alpine AS build
-ARG FERMENTA_REF=7b98c1af8b01ef5133618546cc44f78238cc807b
-WORKDIR /src
-RUN apk add --no-cache git \
- && git init -q . \
- && git remote add origin https://github.com/laris-co/fermenta.git \
- && git fetch --depth 1 origin "${FERMENTA_REF}" \
- && git checkout -q FETCH_HEAD
-RUN npm install --no-audit --no-fund
-RUN npx tsc -b && npx vite build
-
 FROM $BUILD_FROM
+
+# NO BUILD STEP, AND NO GIT FETCH. Both earlier designs were wrong:
+#
+#   COPY ../src   — impossible. Supervisor builds with the ADD-ON DIRECTORY as
+#                   the context; it never sees the repository root.
+#   git fetch <pinned sha> — built, but pinned a commit written once at creation
+#                   and never updated. Four commits of fixes were published and
+#                   silently never reached the image, because every rebuild
+#                   faithfully fetched the same stale ref. Reproducibility
+#                   without a release step is just staleness.
+#
+# The bundle is committed to fermenta/dist/ by `npm run sync` and copied
+# straight in. The image always matches the commit it was built from, installs
+# are seconds rather than an on-device node build, and there is no ref to forget
+# to bump. Cost: dist/ is build output in git, so `npm run sync` is mandatory
+# before releasing — the README says so and the version bump is in the same step.
 RUN apk add --no-cache nginx
-COPY --from=build /src/dist /var/www
+COPY dist /var/www
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY run.sh /run.sh
 RUN chmod a+x /run.sh

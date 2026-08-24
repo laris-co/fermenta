@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync": "tsc -b && vite build && rm -rf fermenta/dist && cp -R dist fermenta/dist"
   },
   "dependencies": {
     "mqtt": "^5.10.1",
