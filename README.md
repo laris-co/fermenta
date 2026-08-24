@@ -39,14 +39,26 @@ of a healthy fermentation.
 - Recipe and tasting notes per batch; history kept after packaging
 - Runs as a Home Assistant add-on with a sidebar entry, authenticated by your HA session
 
-## Prerequisite that will bite you
+## Connecting to Mosquitto
 
-**Mosquitto needs a websocket listener.** A browser cannot open a raw 1883 socket, and the
-Home Assistant Mosquitto add-on exposes 1883 and 8883 only. Without an explicit websocket
-listener, nothing will ever arrive and the app will sit at "mqtt connecting" forever.
+A browser cannot open a raw 1883 socket, so Fermenta speaks **MQTT over WebSockets**.
 
-Add one to the Mosquitto add-on's customize config, commonly on port 1884, then point
-Fermenta at `ws://<host>:1884`.
+**Verified on a real Home Assistant Mosquitto add-on**: the websocket listener is present on
+**port 1884** and works — a native WebSocket negotiates the `mqtt` subprotocol and the broker
+returns a proper CONNACK. An earlier draft of this README claimed you had to add the listener
+yourself; that was wrong, and it was wrong because it was reasoned from the add-on's
+documented ports rather than tested.
+
+**It does require credentials.** Anonymous connects are refused with CONNACK return code 5
+(*not authorised*). HA's Mosquitto add-on authenticates against **Home Assistant users**, so
+use a real HA username and password — the same ones you log into HA with.
+
+    url       ws://<host>:1884
+    username  <your HA username>
+    password  <your HA password>
+
+If you see rc=5, the broker is up and your credentials are wrong. If nothing happens at all,
+check the port.
 
 Payload format is not assumed: a bare number (`19.4`), a JSON number, or JSON with a
 `temperature` / `temp` / `value` / `state` key all parse. Readings outside −30…120 °C are

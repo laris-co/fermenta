@@ -42,11 +42,14 @@ than a gap.
 
 - **Sensor path**: ESPHome temperature probe → publishes to Mosquitto (MQTT broker running
   as a HAOS add-on on the `catlab` guest, 192.168.1.143) → the browser subscribes directly.
-- **Browser MQTT is over WebSockets, not raw 1883.** Mosquitto's websocket listener has to
-  be enabled explicitly; the default add-on config exposes 1883/8883 only. This is a
-  deployment prerequisite, not an app feature.
-- **Deployment**: a Home Assistant add-on with `ingress: true`, `ingress_panel: true` and a
-  panel icon, so it appears in catlab's left sidebar next to ESPHome and Node-RED. HA's own
+- **Browser MQTT is over WebSockets, not raw 1883.** Verified against the live broker: the
+  HA Mosquitto add-on's websocket listener is present on **1884**, negotiates the `mqtt`
+  subprotocol, and returns a valid CONNACK. It requires credentials — anonymous connects are
+  refused rc=5 — and authenticates against Home Assistant users, so an HA login works.
+  (An earlier assumption that the listener had to be added by hand was wrong; it was reasoned
+  from documented ports instead of tested.)
+- **Deployment**: a Home Assistant add-on with `ingress: true` plus `panel_icon`/`panel_title`
+  (there is no `ingress_panel` key in config.yaml — it is Supervisor runtime state), so it appears in catlab's left sidebar next to ESPHome and Node-RED. HA's own
   session is the authentication — the app never implements login.
 - **Reachable** on the LAN at `catlab.local`, and remotely at `ha.laris.co` behind
   Cloudflare Access.
