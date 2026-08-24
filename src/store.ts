@@ -48,10 +48,18 @@ export function loadCfg(): { url: string; username: string; password: string } {
     const raw = localStorage.getItem(CFG);
     if (raw) return JSON.parse(raw) as { url: string; username: string; password: string };
   } catch { /* fall through */ }
-  // Sensible default for the catlab guest. Port 1884 is the websocket listener
-  // that has to be added to Mosquitto's config — 1883 will NOT work from a browser.
+  // Port 1884 is Mosquitto's websocket listener (verified present on the HA
+  // add-on). 1883 will NOT work from a browser. Credentials are intentionally
+  // blank: the broker authenticates against Home Assistant users, so there is no
+  // sensible default, and a blank username is what marks the app "unconfigured"
+  // rather than having it fail a connection it was never going to complete.
   return { url: "ws://192.168.1.143:1884", username: "", password: "" };
 }
+
+/** Enough to attempt a connection at all. Anonymous is refused (rc=5), so a
+ *  username is as required as the URL. */
+export const isConfigured = (c: { url: string; username: string }): boolean =>
+  Boolean(c.url.trim() && c.username.trim());
 
 export function saveCfg(c: { url: string; username: string; password: string }): void {
   try { localStorage.setItem(CFG, JSON.stringify(c)); } catch { /* ignore */ }

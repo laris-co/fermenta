@@ -5,7 +5,7 @@ import {
   tempAgeMs, verdict, type Batch, type Stage,
 } from "./model";
 import { connect, type Bus, type ConnState } from "./mqtt";
-import { load, loadCfg, save, saveCfg, seedBatch, thin } from "./store";
+import { isConfigured, load, loadCfg, save, saveCfg, seedBatch, thin } from "./store";
 
 /* ── small shared pieces ─────────────────────────────────────────────────── */
 
@@ -64,8 +64,17 @@ function Rail({
   onNew: () => void; conn: ConnState;
 }) {
   const now = Date.now();
+  // "not configured" is not a fault — it gets the neutral band, not the red one.
   const connBand =
-    conn === "connected" ? EMISSION[546] : conn === "connecting" ? EMISSION[589] : EMISSION[656];
+    conn === "connected" ? EMISSION[546]
+    : conn === "connecting" ? EMISSION[589]
+    : conn === "unconfigured" ? EMISSION[436]
+    : EMISSION[656];
+  const connLabel =
+    conn === "connected" ? "mqtt live"
+    : conn === "connecting" ? "mqtt connecting"
+    : conn === "unconfigured" ? "mqtt not set up"
+    : `mqtt ${conn}`;
 
   return (
     <nav className="flex h-full flex-col" aria-label="Vessels">
@@ -79,9 +88,7 @@ function Rail({
             <line x1="0" y1="4" x2="14" y2="4" stroke={connBand} strokeWidth="1.5"
                   strokeDasharray={conn === "connected" ? undefined : "3 3"} />
           </svg>
-          <span className="tick-label" style={{ color: connBand }}>
-            {conn === "connected" ? "mqtt live" : conn === "connecting" ? "mqtt connecting" : `mqtt ${conn}`}
-          </span>
+          <span className="tick-label" style={{ color: connBand }}>{connLabel}</span>
         </div>
       </div>
 
@@ -430,7 +437,9 @@ export default function App() {
 
   useEffect(() => {
     bus.current?.disconnect();
-    if (!cfg.url) { setConn("idle"); return; }
+    // Attempting a connection with no credentials guarantees CONNACK rc=5 and
+    // paints an error over a fresh install. Don't try; say it isn't set up.
+    if (!isConfigured(cfg)) { setConn("unconfigured"); setErr(undefined); return; }
     bus.current = connect(cfg, topics, onSample, (s, e) => { setConn(s); setErr(e); });
     return () => bus.current?.disconnect();
     // topics deliberately excluded — resubscription is handled below without a reconnect
@@ -460,9 +469,13 @@ export default function App() {
   return (
     <div className="flex h-full">
       {/* the rail — pinned on desktop, a drawer on a phone in a warm room */}
+      {/* A rail with no ticks is 15rem of nothing beside a centred empty state.
+          With zero vessels there is nothing to navigate, so it collapses and the
+          empty state gets the whole surface. */}
       <aside
         className={`fixed inset-y-0 left-0 z-20 w-[15rem] border-r border-bone-faint/15 bg-ash-900/95
-                    backdrop-blur transition-transform lg:static lg:translate-x-0 lg:bg-transparent
+                    backdrop-blur transition-transform lg:bg-transparent
+                    ${batches.length === 0 ? "lg:hidden" : "lg:static lg:translate-x-0"}
                     ${railOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <Rail
@@ -479,10 +492,12 @@ export default function App() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3
                         border-b border-bone-faint/15 bg-ash-900/90 px-5 py-2.5 backdrop-blur">
-          <button className="tick-label text-bone-dim hover:text-bone lg:invisible"
-                  onClick={() => setRailOpen(true)}>
-            ≡ vessels
-          </button>
+          {batches.length > 0 ? (
+            <button className="tick-label text-bone-dim hover:text-bone lg:invisible"
+                    onClick={() => setRailOpen(true)}>
+              ≡ vessels
+            </button>
+          ) : <span />}
           <button className="tick-label text-bone-dim hover:text-bone"
                   onClick={() => setShowSettings((s) => !s)}>
             {showSettings ? "close" : "mqtt"}
@@ -502,7 +517,19 @@ export default function App() {
               Add a vessel and point it at the MQTT topic its probe publishes to. Temperature
               starts drawing itself; gravity is yours to log.
             </p>
-            <div className="mt-6 flex justify-center"><Action tone="signal" onClick={addBatch}>+ new batch</Action></div>
+            {conn === "unconfigured" && (
+              <p className="tick-label mx-auto mt-4 max-w-sm normal-case tracking-normal"
+                 style={{ color: EMISSION[436] }}>
+                MQTT is not set up yet. The broker authenticates against Home Assistant users,
+                so it needs a real HA username and password — there is no useful default.
+              </p>
+            )}
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <Action tone="signal" onClick={addBatch}>+ new batch</Action>
+              {conn === "unconfigured" && (
+                <Action onClick={() => setShowSettings(true)}>set up mqtt</Action>
+              )}
+            </div>
           </div>
         )}
       </main>

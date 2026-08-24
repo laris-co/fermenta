@@ -21,7 +21,17 @@ export interface MqttConfig {
   password?: string;
 }
 
-export type ConnState = "idle" | "connecting" | "connected" | "error" | "closed";
+/**
+ * "unconfigured" is deliberately separate from "error".
+ *
+ * The add-on ships with a plausible default URL and NO credentials, and the HA
+ * Mosquitto add-on refuses anonymous connects with CONNACK rc=5. So a fresh
+ * install used to attempt a connection it could not possibly complete and paint
+ * MQTT ERROR in the rail — telling a first-time user something is broken when in
+ * fact nothing has been set up yet. Those are different situations and they get
+ * different words.
+ */
+export type ConnState = "unconfigured" | "idle" | "connecting" | "connected" | "error" | "closed";
 
 export interface Incoming {
   topic: string;
