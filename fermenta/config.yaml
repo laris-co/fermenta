@@ -9,10 +9,15 @@ url: https://github.com/laris-co/fermenta
 arch:
   - amd64
   - aarch64
-# The image is nginx serving a static bundle — it ships no init of its own, so
-# Supervisor's init reaps zombies and forwards signals. (Contrast the Hermes
-# add-ons, which wrap an image with its own s6 and therefore need init: false.)
-init: true
+# init: FALSE — and the reason is the opposite of what it looks like.
+#
+# This add-on is "just nginx serving static files", so init: true looked right.
+# It is not: the HOME ASSISTANT BASE IMAGE itself ships s6-overlay. With
+# init: true, Supervisor inserts its own init as PID 1 and s6 dies at startup:
+#   s6-overlay-suexec: fatal: can only run as pid 1
+# Any add-on built FROM ghcr.io/home-assistant/*-base needs init: false,
+# regardless of how simple the add-on's own payload is.
+init: false
 startup: application
 boot: auto
 # ingress: true is what makes this a sidebar app; panel_icon/panel_title style

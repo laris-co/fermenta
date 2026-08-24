@@ -1,4 +1,6 @@
-ARG BUILD_FROM
+# Supervisor warns that build.yaml is deprecated and wants build params in the
+# Dockerfile. Defaulting BUILD_FROM here means this builds with or without it.
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21
 
 # Supervisor builds an add-on with the ADD-ON DIRECTORY as the build context, not
 # the repository root — so this cannot COPY ../src. It fetches a pinned commit of
