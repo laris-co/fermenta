@@ -1,0 +1,28 @@
+name: Fermenta
+version: "0.1.0"
+slug: fermenta
+description: >-
+  Fermentation tracking that reads temperature straight off MQTT. Machine
+  readings are dense and continuous; gravity and pH are yours to log. A stall
+  shows up as a shape, not a gap.
+url: https://github.com/laris-co/fermenta
+arch:
+  - amd64
+  - aarch64
+# The image is nginx serving a static bundle — it ships no init of its own, so
+# Supervisor's init reaps zombies and forwards signals. (Contrast the Hermes
+# add-ons, which wrap an image with its own s6 and therefore need init: false.)
+init: true
+startup: application
+boot: auto
+# Ingress + panel is what puts it in the LEFT SIDEBAR rather than hiding it
+# behind Settings > Add-ons. ingress alone is not enough.
+ingress: true
+ingress_port: 8099
+ingress_panel: true
+panel_icon: mdi:beer-outline
+panel_title: Fermenta
+# No published port: everything is reached through HA's authenticated ingress,
+# so the app never implements a login of its own.
+options: {}
+schema: {}

@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply font-grot text-bone antialiased;
+    /* The continuum: banded charcoal, not a flat ground. */
+    background-image:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #0b0c0e 0%, #14171c 55%, #0b0c0e 100%);
+    background-attachment: fixed;
+  }
+  ::selection { background: #fbbf2433; }
+  :focus-visible { outline: 1px solid #fbbf24; outline-offset: 2px; }
+}
+
+@layer utilities {
+  .tick-label { @apply font-grot text-[10px] uppercase tracking-rail text-bone-faint; }
+  .plate { background: linear-gradient(180deg,#181b20 0%,#141619 100%); }
+  /* stale data must LOOK stale — encoded in form, never only in colour */
+  .line-stale { stroke-dasharray: 1 5; opacity: 0.55; }
+  .line-pending { stroke-dasharray: 5 4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
