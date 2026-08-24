@@ -15,11 +15,18 @@ arch:
 init: true
 startup: application
 boot: auto
-# Ingress + panel is what puts it in the LEFT SIDEBAR rather than hiding it
-# behind Settings > Add-ons. ingress alone is not enough.
+# ingress: true is what makes this a sidebar app; panel_icon/panel_title style
+# the entry. There is NO `ingress_panel` key in config.yaml — verified against
+# esphome, configurator, node-red and vscode, none of which use one.
+#
+# `ingress_panel` DOES exist, but as per-add-on SUPERVISOR RUNTIME state (the
+# "Show in sidebar" toggle), settable via POST /addons/<slug>/options. That
+# distinction matters after install: on a real guest, 8 of 9 add-ons were found
+# sitting at ingress:true / ingress_panel:false, i.e. a working UI reachable only
+# via Settings > Add-ons. If this add-on installs without a sidebar entry, that
+# runtime flag is why, not this file.
 ingress: true
 ingress_port: 8099
-ingress_panel: true
 panel_icon: mdi:beer-outline
 panel_title: Fermenta
 # No published port: everything is reached through HA's authenticated ingress,
