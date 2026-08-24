@@ -1,0 +1,8 @@
+# Supervisor passes BUILD_VERSION and BUILD_ARCH as build args, but NOT
+# BUILD_FROM — that comes from this file, mapping each declared arch to its base
+# image. Without build.yaml the build dies with:
+#   ERROR: failed to build: base name ($BUILD_FROM) should not be blank
+# which reads like a Dockerfile typo and is actually a missing file.
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base:3.21
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.21
